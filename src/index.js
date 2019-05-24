@@ -14,35 +14,56 @@ class Game extends React.Component {
             writtenLetters: [],
             matchedLetters: [],
             isGameOver: true,
+            isWin: false,
         }
         this.handleLetterButtonClick = this.handleLetterButtonClick.bind(this);
     }
 
-
-    startNewGame() {
+    handleClickStartNewGame() {
         const word = getNewWord()
-
+        
         this.setState({
             word: word,
             lives: 12,
             writtenLetters: [word[0]],
             matchedLetters: [word[0]],
-            isGameOver: false
+            isGameOver: false,
+            isWin: false
         })
     }
+    
+    checkIfPlayerWon(letterArray) {
+        //Filter array to obtain unique values
+        letterArray = [...new Set(letterArray)]; 
 
-    handleClickStartNewGame() {
-        this.startNewGame()
+        if (this.state.matchedLetters.length === letterArray.length) {
+            this.setState({
+                isWin: true
+            })
+        }
     }
 
-    handleLetterButtonClick(writtenLetters, lives, newLetter) {
+    async handleLetterButtonClick(newLetter) {
+        //First we check if the letter is included in the word, if is push it on the matchedLetters array
+        //With the spread operator as REACT doesn't like push because it mutates the array
+
+        let wordLettersArray = this.state.word.split('')
+        if (wordLettersArray.includes(newLetter)) {
+            //We use await here as setState is async, we probably can use a callback but like this is ok and tidy.
+            await this.setState({
+                matchedLetters: [...this.state.matchedLetters, newLetter],
+            })
+        }
+
+        this.checkIfPlayerWon(wordLettersArray)
+
         //First we check if the player lost or if he can continue playing the game
-        const isGameOver = (lives - 1) <= 0 ? true : false
+        const isGameOver = (this.state.lives - 1) <= 0 ? true : false
 
         //Then we set the state of the app, with the new letter and number of lives
         this.setState({
-            lives: lives - 1,
-            writtenLetters: [...writtenLetters, newLetter],
+            lives: this.state.lives - 1,
+            writtenLetters: [...this.state.writtenLetters, newLetter],
             isGameOver: isGameOver
         })
     }
@@ -54,14 +75,16 @@ class Game extends React.Component {
                     word={this.state.word} 
                     lives={this.state.lives}
                     isGameOver={this.state.isGameOver}
+                    isWin={this.state.isWin}
                     writtenLetters={this.state.writtenLetters}>
                 </ScoreBoard>
 
                 <AlphabetButtons
-                    // matchedLetters={this.state.matchedLetters}
                     writtenLetters={this.state.writtenLetters}
+                    matchedLetters={this.state.matchedLetters}
                     lives={this.state.lives}
                     isGameOver={this.state.isGameOver}
+                    isWin={this.state.isWin}
                     handleLetterButtonClick={this.handleLetterButtonClick}>
                 </AlphabetButtons>
                 
@@ -88,14 +111,14 @@ function AlphabetButtons (props) {
             return <button 
                         key={index} 
                         value={letter}
-                        onClick={() => props.handleLetterButtonClick(props.writtenLetters, props.lives, letter)}>
+                        onClick={() => props.handleLetterButtonClick(letter)}>
                             {letter}
                     </button>
         }
     })
 
-    lettersButtons = props.isGameOver ? null : lettersButtons
-
+    lettersButtons = (props.isGameOver || props.isWin) ? null : lettersButtons
+    
     return (
         <div>
             {lettersButtons}
@@ -119,15 +142,21 @@ function ScoreBoard(props) {
     const writtenLettersHtml = props.writtenLetters.map((letter, index) => {
         return <b key={index} >{letter}</b>
     })
+    
+    //If we don't have a word yet, hide this
+    const numberLettersOfWord = props.word.length > 0 ? <h1>{props.word.length} letters contains the word</h1> : null
 
     //Check if the game is in gameover status or we can play
-    const showLivesLeftHtml = props.isGameOver ? <h1 className="gameover">GAME OVER... Insert Coin</h1> : <h1 className="lives-left">You have {props.lives} lives lefts</h1>
+    let showLivesLeftHtml = props.isGameOver ? <h1 className="gameover">GAME OVER... Insert Coin</h1> : <h1 className="lives-left">You have {props.lives} lives lefts</h1>
 
+    //Check if we win
+    showLivesLeftHtml = props.isWin ? <h1 className="win">YOU WIN CONGRATULATIONS :)</h1> : showLivesLeftHtml
+    
     return (
         <div>
             {showLivesLeftHtml}
             <h1>{wordsLettersHtml}</h1>
-            <h1>{props.word.length} Letters to guess</h1>
+            {numberLettersOfWord}
             <span>Letters used: </span> {writtenLettersHtml}
         </div>
     )

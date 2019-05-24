@@ -1,3 +1,20 @@
 .gameover {
-    color: red
+    color: red;
+}
+
+.win {
+    color: green;
+    font-size: 80px;
+}
+
+.lives-left {
+    color: blue;
+}
+
+.letter-to-guess {
+    color: purple;
+}
+
+.letter-guessed {
+    color: goldenrod;
 }
